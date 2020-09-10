@@ -430,7 +430,6 @@
 "429"	"nsclc_mskcc_2018p1"	"former/ current"	NA	1.4127	60	NA	1	"NR"	1.57894736842105	"lung2"
 "430"	"nsclc_mskcc_2018p2"	"former/ current"	NA	6.8008	210	NA	1	"R"	5.52631578947368	"lung2"
 "431"	"nsclc_mskcc_2018p3"	"never"	NA	1.4784	12	NA	0	"NR"	0.315789473684211	"lung2"
-"432"	"nsclc_mskcc_2018p4"	"former/ current"	NA	3.7782	111	NA	1	"NR"	2.92105263157895	"lung2"
 "433"	"nsclc_mskcc_2018p5"	"never"	NA	7.5565	135	NA	1	"R"	3.55263157894737	"lung2"
 "434"	"nsclc_mskcc_2018p6"	"former/ current"	NA	3.7125	50	NA	1	"NR"	1.31578947368421	"lung2"
 "435"	"nsclc_mskcc_2018p7"	"former/ current"	NA	38.6037	232	NA	0	"R"	6.10526315789474	"lung2"

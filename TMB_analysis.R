@@ -6,12 +6,13 @@ library(ggpubr)
 library(maftools)
 library(survival)
 library(ggrepel)
+library(tibble)
+library(dplyr)
 
+source("TMB_functions.R")
 
-source("Function_GURJAO_2020.R")
-
-data_tmb19cancers = read.delim("data_tmb19cancers.csv", stringsAsFactors = F)
-data_tmb_targeted = read.delim("data_tmb_targeted.csv", stringsAsFactors = F)
+data_tmb19cancers = read.delim("data_tmb19cancers", stringsAsFactors = F)
+data_tmb_targeted = read.delim("data_tmb_targeted", stringsAsFactors = F)
 data_tmb_wes = read.delim("data_tmb_wes", stringsAsFactors = F)
 data_copd = read.delim("data_copd", stringsAsFactors = F)
 

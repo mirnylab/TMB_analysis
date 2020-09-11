@@ -1,45 +1,40 @@
 # Figure 1A
 plot_all_cancers <- function(data_)
 {
-  to_plot = c()
-  for (i in 1:dim(data_)[1])
-  {
-    to_plot = rbind(to_plot, 
-                    cbind(as.numeric(as.character(data_$TMB[i])),
-                          as.character(data_$dataset[i]) ,
-                          data_$response[i]))
-  }
+  # data_ = data_tmb_wes # For testing
+  data_ = data_[c("TMB", "dataset", "response")] 
+  data_ = data_[complete.cases(data_),]
   
-  to_plot = data.frame(to_plot)
-  colnames(to_plot) = c("TMB", "Cancer", "response")
-  to_plot$x = paste0(to_plot$Cancer, to_plot$response)
-  to_plot$TMB = as.numeric(as.character(to_plot$TMB))
-  to_plot = to_plot[complete.cases(to_plot),]
-  to_plot = to_plot[which(!(as.character(to_plot$Cancer) == "Anal")),]
-  to_plot = to_plot[which(!(as.character(to_plot$Cancer) == "Sarcoma")),]
+  data_$dataset = factor(data_$dataset, 
+                         levels=c("SCLC", "Sarcoma", "Anal", 'bladder2', 'ccRCC',
+                                  'HNSCC', 'uro1', 'Bladder', 'lung1', 'lung2',
+                                  'mel1', 'mel2', 'mel3', 'mel4', 'mel5'))
   
-  to_plot$Cancer = factor(to_plot$Cancer, levels=c('Renal Cell Carcinoma',
-                                                   'HNSCC',
-                                                   'Bladder',
-                                                   'lung1',
-                                                   'lung2',
-                                                   'mel1',
-                                                   'mel2'))
+  data_$response = factor(data_$response, 
+                         levels=c("NR", "R"))
   
-  p <- ggboxplot(to_plot, x = "response", y = "TMB",
+  data_ = data_ %>% 
+  group_by(dataset) %>% 
+  mutate(dataset = paste0(dataset, "\nn=", dplyr::n()))
+  
+  p <- ggboxplot(data_, x = "response", y = "TMB",
                  color = "response", palette =  c( "darkgoldenrod2", "cadetblue3"), 
                  add = "jitter",
-                 facet.by = "Cancer", short.panel.labs = T) 
+                 facet.by = "dataset", short.panel.labs = T) 
   p = p + yscale("log10", .format = TRUE)  + coord_cartesian(ylim = c(1,10^4.5))
   p = p + stat_compare_means(comparisons = list(c("R", "NR")),
-                             label = "p.format", method = "wilcox.test", method.args = list(alternative = "t"))+
-    facet_wrap(~Cancer,  nrow=1)
+                             label = "p.format", 
+                             method = "wilcox.test", 
+                             method.args = list(alternative = "t"))+
+    facet_wrap(~dataset,  nrow=1)
   print(p)
 }
 
 # Figure 1B and 1C
 plot_stratif <- function(data_, title)
 {
+  # data_ = mel1  # For testing
+  # title = "mel1"  # For testing
   data_ = data.frame(data_[,c("TMB", "response", "Stratif_type")])
   data_ = data_[complete.cases(data_),]
   
@@ -50,12 +45,14 @@ plot_stratif <- function(data_, title)
                                       'never',
                                       'former/ current',
                                       'all'))
+  data_ = data_ %>% 
+    group_by(Stratif_type) %>% 
+    mutate(Stratif_type = paste0(Stratif_type, "\nn=", dplyr::n()))
   
   p <- ggboxplot(data_, x = "response", y = "TMB",
                  color = "response", palette =  c( "darkgoldenrod2", "cadetblue3"), 
                  add = "jitter",
                  facet.by = "Stratif_type", short.panel.labs = FALSE)
-  # Use only p.format as label. Remove method name.
   p = p + stat_compare_means(comparisons = list(c("R", "NR")),
                              label = "p.format", method = "wilcox.test")
   p = p + theme(legend.position = "none")

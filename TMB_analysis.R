@@ -79,7 +79,7 @@ youden_indexes[1:2] = plot_auc(rbind(mel1, mel2))[3:4]
 youden_indexes[3:4] = plot_auc(rbind(lung1, lung2))[3:4]
 
 # Figure 3C
-FDA_youden_cutoffs(youden_indexes)
+FDA_youden_cutoffs(youden_indexes, mel1, mel2, lung1, lung2)
 
 # Figure 3D
 misclassified_pats(youden_indexes, mel1, mel2, lung1, lung2)

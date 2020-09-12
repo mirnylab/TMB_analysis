@@ -136,7 +136,6 @@ permutation_analysis <- function(clinical.data_,
   to_plot[which(to_plot$p_value < 10^-10),1] = 10^-10
   to_plot2 = to_plot
   p<-ggplot(to_plot2, aes(x=stratification, y=p_value, fill=stratification, levels = stratification)) +
-    # scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
     geom_violin(trim=T, scale = "width") + yscale("log10", .format = TRUE) +
     geom_hline(aes(yintercept = 0.05), color = "chartreuse3",  linetype="dashed") +
     geom_point(data = df, col = 'darkred', shape = 18, size = 5) + 
@@ -189,7 +188,7 @@ logrank_percutoff <-function(survival, tmb, censorship)
 # Figure 3A and 3B
 plot_auc <- function(data_)
 {
-  data_ = data_tmb_wes # For testing
+  # data_ = mel1 # For testing
   data_auc = c()
   data_auc$tmb = as.numeric(as.character(data_$mutation_rate))
   data_auc$response = as.character(data_$response)
@@ -206,33 +205,21 @@ plot_auc <- function(data_)
 }
 
 # Figure 3C
-FDA_youden_cutoffs <- function(youden_indexes)
+FDA_youden_cutoffs <- function(youden_indexes, mel1, mel2, lung1, lung2)
 {
-  data_ = c()
-  data_$TMB = c(as.numeric(as.character(mel1$mutation_rate)),
-                as.numeric(as.character(mel2$mutation_rate)),
-                as.numeric(as.character(lung1$mutation_rate)),
-                as.numeric(as.character(lung2$mutation_rate)))
-  data_$response = c((as.character(mel1$response)),
-                     (as.character(mel2$response)),
-                     (as.character(lung1$response)),
-                     (as.character(lung2$response)))
-  data_$dataset = c(rep( "mel1", length(as.character(mel1$response))),
-                    rep( "mel2", length(as.character(mel2$response))),
-                    rep( "lung1", length(as.character(lung1$response))),
-                    rep( "lung2", length(as.character(lung2$response))))
-  data_$youden = c(rep( youden_indexes[1], length(as.character(mel1$response))),
-                   rep( youden_indexes[2], length(as.character(mel2$response))),
-                   rep( youden_indexes[3], length(as.character(lung1$response))),
-                   rep( youden_indexes[4], length(as.character(lung2$response))))
-  data_ = data.frame(data_)
+  data_ = data.frame(rbind(cbind(mel1, youden = youden_indexes[1]),
+                           cbind(mel2, youden = youden_indexes[2]), 
+                           cbind(lung1, youden = youden_indexes[3]), 
+                           cbind(lung2, youden = youden_indexes[4])))
+  
+  data_ = data_[,c('mutation_rate', 'response', 'dataset', 'youden')]
   data_ = data_[complete.cases(data_),]
   data_$dataset = factor(data_$dataset, levels=c('mel1',
                                                  'mel2',
                                                  'lung1',
                                                  'lung2'))
   
-  p <- ggboxplot(data_, x = "response", y = "TMB",
+  p <- ggboxplot(data_, x = "response", y = "mutation_rate",
                  color = "response", palette =  c( "darkgoldenrod2", "cadetblue3"), 
                  # add = "jitter",
                  facet.by = "dataset", short.panel.labs = T) 

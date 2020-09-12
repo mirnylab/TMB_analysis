@@ -1,4 +1,4 @@
-library("cutpointr")
+library(cutpointr)
 library(data.table)
 library(viridis)
 library(ggplot2)
@@ -7,13 +7,13 @@ library(maftools)
 library(survival)
 library(ggrepel)
 library(tibble)
-library(dplyr)
+# library(dplyr)
 
 source("TMB_functions.R")
 
 data_tmb19cancers = read.delim("data_tmb19cancers", stringsAsFactors = F)
 data_tmb_targeted = read.delim("data_tmb_targeted", stringsAsFactors = F)
-data_tmb_wes = read.delim("data_tmb_wes", stringsAsFactors = F)
+data_tmb_wes = read.delim("/home/cgurjao/Dropbox (Partners HealthCare)/Mirnylab/TMB_project/Data/Processed_data/data_tmb_wes", stringsAsFactors = F)
 data_copd = read.delim("data_copd", stringsAsFactors = F)
 
 mel1 = data_tmb_wes[which(data_tmb_wes$dataset == "mel1"),]

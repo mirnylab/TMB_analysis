@@ -27,7 +27,8 @@ plot_all_cancers <- function(data_)
                              method = "wilcox.test", 
                              method.args = list(alternative = "t"))+
     facet_wrap(~dataset,  nrow=1)
-  print(p)
+  return(p)
+  
 }
 
 # Figure 1B and 1C
@@ -64,6 +65,8 @@ plot_stratif <- function(data_, title)
 # Figure 2A
 plot_raw_data <- function(data_, title)
 {
+  # data_ = mel1  # For testing
+  # title = "mel1"  # For testing
   p = ggscatter(data_, x = "TMB", y = "PFS",
                 color = "response",fill = "response",  size = 4, shape=as.numeric(data_$PFS_censorship)+16, alpha = 0.7) + 
     yscale("log10", .format = TRUE) + 
@@ -77,9 +80,15 @@ plot_raw_data <- function(data_, title)
 permutation_analysis <- function(clinical.data_, 
                                  stratification_1, 
                                  stratification_2,
-                                 survival_type = "OS",
-                                 survival_censor = "OS_censorship")
+                                 survival_type,
+                                 survival_censor)
 {
+  # clinical.data_ = mel1 # for testing
+  # stratification_1 = ("skin/ occult") # for testing
+  # stratification_2 = ("acral/ mucosal") # for testing
+  # survival_type = "PFS" # for testing
+  # survival_censor = "PFS_censorship" # for testing
+  
   clinical.data_ = as.data.frame(clinical.data_)
   clinical.data_ = clinical.data_[which(!is.na(clinical.data_[,survival_type])),]
   clinical.data_ = clinical.data_[which(!is.na(clinical.data_[,survival_censor])),]
@@ -97,7 +106,6 @@ permutation_analysis <- function(clinical.data_,
   real_stratif_1 = logrank_percutoff(survival = clinical.data_1[,survival_type],
                                      tmb = clinical.data_1$TMB,
                                      censorship = clinical.data_1[,survival_censor])
-  
   
   clinical.data_2 = clinical.data_[which(clinical.data_$Stratif_type == stratification_2),]
   stratif_2 = permut_logrank(survival = clinical.data_2[,survival_type],
@@ -159,16 +167,17 @@ permut_logrank <-function(survival, tmb, censorship)
 logrank_percutoff <-function(survival, tmb, censorship)
 {
   pvalues = c()
-  data = data.frame(cbind(survival, tmb, censorship))
+  data_ = data.frame(cbind(survival, tmb, censorship))
   for (i in sort(tmb))
   {
     if (!(i %in% c(max(tmb), min(tmb))))
     {
-      tmb_low = data[which(tmb < i),]
-      tmb_low$ml = "LML"
-      tmb_high = data[which(tmb > i),]
-      tmb_high$ml = "HML"
-      res_surv <- survdiff(Surv(survival, censorship) ~ ml,  data = rbind(tmb_low, tmb_high),
+      data_tmp = data_
+      data_tmp$tmb_categ = NA
+      data_tmp$tmb_categ = ifelse(data_tmp$tmb < i ,"lTMB",
+                                  ifelse(data_tmp$tmb > i,"hTMB",
+                                         NA))
+      res_surv <- survdiff(Surv(survival, censorship) ~ tmb_categ,  data = data_tmp,
                            rho = 0)
       res_p.value <- 1 - pchisq(res_surv$chisq, length(res_surv$n) - 1)
       pvalues = c(pvalues, res_p.value)
@@ -180,6 +189,7 @@ logrank_percutoff <-function(survival, tmb, censorship)
 # Figure 3A and 3B
 plot_auc <- function(data_)
 {
+  data_ = data_tmb_wes # For testing
   data_auc = c()
   data_auc$tmb = as.numeric(as.character(data_$mutation_rate))
   data_auc$response = as.character(data_$response)

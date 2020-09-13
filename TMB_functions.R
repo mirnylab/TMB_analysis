@@ -156,6 +156,7 @@ permut_logrank <-function(survival, tmb, censorship)
   shuffled_pvalues = c()
   for (i in 1:1000)
   {
+    RNGkind(sample.kind = "Rounding") # to actually set the seed: https://community.rstudio.com/t/getting-different-results-with-set-seed/31624/2
     set.seed(i)
     shuffled_pvalues = c(shuffled_pvalues,
                          logrank_percutoff(survival, sample(tmb), censorship))
@@ -207,6 +208,7 @@ plot_auc <- function(data_)
 # Figure 3C
 FDA_youden_cutoffs <- function(youden_indexes, mel1, mel2, lung1, lung2)
 {
+  # youden_indexes = c("8.522727", "3.695706", "3.323143", "4.250000") # For testing
   data_ = data.frame(rbind(cbind(mel1, youden = youden_indexes[1]),
                            cbind(mel2, youden = youden_indexes[2]), 
                            cbind(lung1, youden = youden_indexes[3]), 

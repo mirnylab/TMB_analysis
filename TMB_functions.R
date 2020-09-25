@@ -78,8 +78,8 @@ plot_raw_data <- function(data_, title)
 
 # Figure 2C, 2D, S2A and S2B
 permutation_analysis <- function(clinical.data_, 
-                                 stratification_1, 
-                                 stratification_2,
+                                 stratification_1 = "NA_1", 
+                                 stratification_2 = "NA_2", 
                                  survival_type,
                                  survival_censor)
 {
@@ -114,27 +114,32 @@ permutation_analysis <- function(clinical.data_,
   real_stratif_2 = logrank_percutoff(survival = clinical.data_2[,survival_type],
                                      tmb = clinical.data_2$TMB,
                                      censorship = clinical.data_2[,survival_censor]) 
-  
-  
-  to_plot = rbind(cbind(all_, "all"),
-                  cbind(stratif_1, stratification_1),
-                  cbind(stratif_2, stratification_2))
+                       
+  to_plot = rbind(cbind(all_, paste0("all\nn=",length(clinical.data_[,1]))),
+                  cbind(stratif_1, paste0(stratification_1, "\nn=",length(clinical.data_1[,1]))),
+                  cbind(stratif_2, paste0(stratification_2, "\nn=",length(clinical.data_2[,1]))))
   to_plot = data.frame(to_plot, stringsAsFactors = F)
   colnames(to_plot) = c("p_value", "stratification")
   to_plot$p_value = as.numeric(as.character(to_plot$p_value))
   to_plot$stratification = (as.character(to_plot$stratification))
   
   df = data.frame(p_value = c(real_all, real_stratif_1, real_stratif_2), 
-                  stratification = c("all", stratification_1, stratification_2))
+                  stratification = c(paste0("all\nn=",length(clinical.data_[,1])), 
+                                     paste0(stratification_1, "\nn=",length(clinical.data_1[,1])), 
+                                     paste0(stratification_2, "\nn=",length(clinical.data_2[,1]))))
   
   to_plot$stratification = factor(to_plot$stratification, levels=c(
-                                                   'acral/ mucosal',
-                                                   'skin/ occult',
-                                                   'never',
-                                                   'former/ current',
-                                                   'all'))
+                                                   paste0(stratification_2, "\nn=",length(clinical.data_2[,1])),
+                                                   paste0(stratification_1, "\nn=",length(clinical.data_1[,1])),
+                                                   paste0("all\nn=",length(clinical.data_[,1]))))
+  
   to_plot[which(to_plot$p_value < 10^-10),1] = 10^-10
   to_plot2 = to_plot
+  
+  # Do not plot if subtype not found
+  to_plot2 <- to_plot2[!is.infinite((to_plot2$p_value)),]
+  df <- df[!is.infinite((df$p_value)),]
+  
   p<-ggplot(to_plot2, aes(x=stratification, y=p_value, fill=stratification, levels = stratification)) +
     geom_violin(trim=T, scale = "width") + yscale("log10", .format = TRUE) +
     geom_hline(aes(yintercept = 0.05), color = "chartreuse3",  linetype="dashed") +
@@ -142,9 +147,9 @@ permutation_analysis <- function(clinical.data_,
     coord_flip(ylim = c(10^-10,1))
   print(p)
   
-  pval_all = sum(to_plot[which(to_plot$stratification == "all"),"p_value"] <= real_all)/ length(to_plot[which(to_plot$stratification == "all"),"p_value"])
-  pval_stratif_1 = sum(to_plot[which(to_plot$stratification == stratification_1),"p_value"] <= real_stratif_1)/ length(to_plot[which(to_plot$stratification == stratification_1),"p_value"])
-  pval_stratif_2 = sum(to_plot[which(to_plot$stratification == stratification_2),"p_value"] <= real_stratif_2)/ length(to_plot[which(to_plot$stratification == stratification_2),"p_value"])
+  pval_all = sum(to_plot[which(to_plot$stratification == paste0("all\nn=",length(clinical.data_[,1]))),"p_value"] <= real_all)/ length(to_plot[which(to_plot$stratification ==  paste0("all\nn=",length(clinical.data_[,1]))),"p_value"])
+  pval_stratif_1 = sum(to_plot[which(to_plot$stratification == paste0(stratification_1, "\nn=",length(clinical.data_1[,1]))),"p_value"] <= real_stratif_1)/ length(to_plot[which(to_plot$stratification == paste0(stratification_1, "\nn=",length(clinical.data_1[,1]))),"p_value"])
+  pval_stratif_2 = sum(to_plot[which(to_plot$stratification == paste0(stratification_2, "\nn=",length(clinical.data_2[,1]))),"p_value"] <= real_stratif_2)/ length(to_plot[which(to_plot$stratification == paste0(stratification_2, "\nn=",length(clinical.data_2[,1]))),"p_value"])
   
   
   return(list(c(pval_all, pval_stratif_1, pval_stratif_2),
@@ -187,9 +192,13 @@ logrank_percutoff <-function(survival, tmb, censorship)
 }
 
 # Figure 3A and 3B
-plot_auc <- function(data_)
+ROC_analysis <- function(data_, all_ = F)
 {
   # data_ = mel1 # For testing
+  if (all_ == T)
+  {
+    data_$dataset = "all"
+  }
   data_auc = c()
   data_auc$tmb = as.numeric(as.character(data_$mutation_rate))
   data_auc$response = as.character(data_$response)
@@ -197,29 +206,44 @@ plot_auc <- function(data_)
   data_auc = data.frame(data_auc)
   data_auc = data_auc[complete.cases(data_auc),]
   
+  data_auc = data_auc %>% 
+    group_by(dataset) %>% 
+    mutate(dataset = paste0(dataset, "\nn=", dplyr::n()))
+  
   cp <- cutpointr(data_auc, tmb,response,  dataset)
   opt_cut <- cutpointr(data_auc, tmb, response, dataset, metric = youden)
-  p = plot_roc(opt_cut) + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
-                                             panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+  p = plot_roc(opt_cut) + 
+    theme_bw() + 
+    theme(panel.border = element_blank(), 
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), 
+          axis.line = element_line(colour = "black"))
   print(p)
-  return(c(opt_cut$AUC, opt_cut$optimal_cutpoint))
+  res_ = rbind(AUC = opt_cut$AUC,
+               Youden_cutpoint = opt_cut$optimal_cutpoint)
+  colnames(res_) = unique(data_auc$dataset)
+  return(res_)
 }
 
 # Figure 3C
-FDA_youden_cutoffs <- function(youden_indexes, mel1, mel2, lung1, lung2)
+biomarker_cutoffs <- function(youden_indexes, data_, all_ = F)
 {
-  # youden_indexes = c("8.522727", "3.695706", "3.323143", "4.250000") # For testing
-  data_ = data.frame(rbind(cbind(mel1, youden = youden_indexes[1]),
-                           cbind(mel2, youden = youden_indexes[2]), 
-                           cbind(lung1, youden = youden_indexes[3]), 
-                           cbind(lung2, youden = youden_indexes[4])))
+  # data_ = rbind(mel1, mel2, lung1, lung2)
+  if (all_ == T)
+  {
+    data_$dataset = "all"
+  }
   
-  data_ = data_[,c('mutation_rate', 'response', 'dataset', 'youden')]
+  data_ = data_[,c('mutation_rate', 'response', 'dataset')]
   data_ = data_[complete.cases(data_),]
-  data_$dataset = factor(data_$dataset, levels=c('mel1',
-                                                 'mel2',
-                                                 'lung1',
-                                                 'lung2'))
+  data_ = data_ %>% 
+    group_by(dataset) %>% 
+    mutate(dataset = paste0(dataset, "\nn=", dplyr::n()))
+  data_$youden = youden_indexes[data_$dataset]
+  if (all_ == T)
+  {
+    data_$youden = youden_indexes
+  }
   
   p <- ggboxplot(data_, x = "response", y = "mutation_rate",
                  color = "response", palette =  c( "darkgoldenrod2", "cadetblue3"), 
@@ -230,37 +254,53 @@ FDA_youden_cutoffs <- function(youden_indexes, mel1, mel2, lung1, lung2)
   p = p + stat_compare_means(comparisons = list(c("NR", "R")),
                              label = "p.format", method = "wilcox.test")
   p = p+geom_hline(aes(yintercept = 10), color = "black",  linetype="dashed")+
-    facet_wrap(~dataset,  ncol=1)
-  p = p + geom_hline(aes(yintercept = youden),  color = "black",  linetype="dashed") + coord_flip()
+    facet_wrap(~dataset,  ncol=1) + coord_flip()
+  p = p + geom_hline(aes(yintercept = youden),  color = "black",  linetype="dashed") 
   print(p)
-  
 }
 
 # Figure 3D
-misclassified_pats <- function(youden_indexes, mel1, mel2, lung1, lung2)
+misclassified_pats <- function(youden_indexes, data_, all_ = F)
 {
+  # data_ = rbind(mel1, mel2, lung1, lung2) #for testing
+  if (all_ == T)
+  {
+    data_$dataset = "all"
+  }
+  
+  data_ = data_[,c('mutation_rate', 'response', 'dataset')]
+  data_ = data_[complete.cases(data_),]
+  data_ = data_ %>% 
+    group_by(dataset) %>% 
+    mutate(dataset = paste0(dataset, "\nn=", dplyr::n()))
+  
   NR_getting_trt = c()
   R_not_getting_trt = c()
   
-  j = 1
-  for (i in list(mel1, mel2, lung1, lung2))
+  for (i in unique(data_$dataset))
   {
+    data_tmp = data.frame(data_[which(data_$dataset == i),])
+    y_ind = youden_indexes[i]
+    if (all_ == T)
+    {
+      y_ind = youden_indexes
+    }
+      
     NR_getting_trt = rbind(NR_getting_trt,
-                           data.frame(Proportion = length(i[which((i$mutation_rate>=10) & (i$response == "NR")),1])/length(i$response[which(i$response == "NR")]),
-                                      row.names = paste("FDA", i$dataset[1])))
+                           data.frame(Proportion = length(data_tmp[which((data_tmp$mutation_rate>=10) & (data_tmp$response == "NR")),1])/length(data_tmp$response[which(data_tmp$response == "NR")]),
+                                      row.names = paste(i,"FDA")))
     
     NR_getting_trt = rbind(NR_getting_trt,
-                           data.frame(Proportion = length(i[which((i$mutation_rate>=youden_indexes[j]) & (i$response == "NR")),1])/length(i$response[which(i$response == "NR")]),
-                                      row.names = paste("Youden", i$dataset[1])))
+                           data.frame(Proportion = length(data_tmp[which((data_tmp$mutation_rate>=y_ind) & (data_tmp$response == "NR")),1])/length(data_tmp$response[which(data_tmp$response == "NR")]),
+                                      row.names = paste(i,"Youden")))
     
     R_not_getting_trt = rbind(R_not_getting_trt,
-                           data.frame(Proportion = length(i[which((i$mutation_rate<10) & (i$response == "R")),1])/length(i$response[which(i$response == "R")]),
-                                      row.names = paste("FDA", i$dataset[1])))
+                           data.frame(Proportion = length(data_tmp[which((data_tmp$mutation_rate<10) & (data_tmp$response == "R")),1])/length(data_tmp$response[which(data_tmp$response == "R")]),
+                                      row.names = paste(i,"FDA")))
     
     R_not_getting_trt = rbind(R_not_getting_trt,
-                           data.frame(Proportion = length(i[which((i$mutation_rate<youden_indexes[j]) & (i$response == "R")),1])/length(i$response[which(i$response == "R")]),
-                                      row.names = paste("Youden", i$dataset[1])))
-    j = j+1
+                           data.frame(Proportion = length(data_tmp[which((data_tmp$mutation_rate<y_ind) & (data_tmp$response == "R")),1])/length(data_tmp$response[which(data_tmp$response == "R")]),
+                                      row.names = paste(i,"Youden")))
   }
   
   NR_getting_trt$x_label = rownames(NR_getting_trt)
@@ -270,29 +310,16 @@ misclassified_pats <- function(youden_indexes, mel1, mel2, lung1, lung2)
   R_not_getting_trt$Proportion =  round( R_not_getting_trt$Proportion, 2)
   
   R_not_getting_trt$x_label = factor(R_not_getting_trt$x_label, 
-                                     levels =c("Youden lung2",
-                                               "FDA lung2",
-                                               "Youden lung1",
-                                               "FDA lung1",
-                                               "Youden mel2",
-                                               "FDA mel2",
-                                               "Youden mel1",
-                                               "FDA mel1"))
+                                     levels = paste(sort(c(unique(data_$dataset), unique(data_$dataset))),  c("FDA", "Youden")))
   
   
   NR_getting_trt$x_label = factor(NR_getting_trt$x_label, 
-                                      levels =c("Youden lung2",
-                                                "FDA lung2",
-                                                "Youden lung1",
-                                                "FDA lung1",
-                                                "Youden mel2",
-                                                "FDA mel2",
-                                                "Youden mel1",
-                                                "FDA mel1"))
+                                  levels = paste(sort(c(unique(data_$dataset), unique(data_$dataset))),  c("FDA", "Youden")))
+  
   
   p1 = ggplot(data=R_not_getting_trt, aes(x=x_label, y=Proportion)) +
     geom_bar(stat="identity")+
-    geom_text(aes(y=Proportion, label=Proportion), vjust=1.6, 
+    geom_text(aes(y=Proportion, label=Proportion), vjust=1, 
               size=3.5)+
     scale_fill_brewer(palette="Paired")+ coord_flip()+
     theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
@@ -302,7 +329,7 @@ misclassified_pats <- function(youden_indexes, mel1, mel2, lung1, lung2)
   
   p2 = ggplot(data=NR_getting_trt, aes(x=x_label, y=Proportion)) +
     geom_bar(stat="identity")+
-    geom_text(aes(y=Proportion, label=Proportion), vjust=1.6, 
+    geom_text(aes(y=Proportion, label=Proportion), vjust=1, 
               size=3.5)+
     scale_fill_brewer(palette="Paired")+ coord_flip()+
     theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),

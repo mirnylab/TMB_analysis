@@ -7,7 +7,8 @@ library(maftools)
 library(survival)
 library(ggrepel)
 library(tibble)
-# library(dplyr)
+library(dca) #rdevtools::install_github("ddsjoberg/dca")
+library(dplyr)
 
 source("TMB_functions.R")
 
@@ -50,39 +51,39 @@ NA
 mel1_permut = permutation_analysis(clinical.data_ = mel1,
                                    stratification_1 = ("skin/ occult"),
                                    stratification_2 = ("acral/ mucosal"),
-                                   survival_type = "PFS", 
+                                   survival_type = "PFS",
                                    survival_censor = "PFS_censorship")
 mel2_permut = permutation_analysis(clinical.data_ = mel2,
                                    stratification_1 = ("skin/ occult"),
                                    stratification_2 = ("acral/ mucosal"),
-                                   survival_type = "PFS", 
+                                   survival_type = "PFS",
                                    survival_censor = "PFS_censorship")
 
 # Figure 2D
 lung1_permut = permutation_analysis(clinical.data_ = lung1,
                                     stratification_1 = ("former/ current"),
                                     stratification_2 = ("never"),
-                                    survival_type = "PFS", 
+                                    survival_type = "PFS",
                                     survival_censor = "PFS_censorship")
 lung2_permut = permutation_analysis(clinical.data_ = lung2,
                                     stratification_1 = ("former/ current"),
                                     stratification_2 = ("never"),
-                                    survival_type = "PFS", 
+                                    survival_type = "PFS",
                                     survival_censor = "PFS_censorship")
 
-
 # Figure 3A
-youden_indexes = c()
-youden_indexes[1:2] = plot_auc(rbind(mel1, mel2))[3:4]
+ROC_all_melanoma = ROC_analysis(rbind(mel1, mel2))
 
 # Figure 3B
-youden_indexes[3:4] = plot_auc(rbind(lung1, lung2))[3:4]
+ROC_all_lung = ROC_analysis(rbind(lung1, lung2))
 
 # Figure 3C
-FDA_youden_cutoffs(youden_indexes, mel1, mel2, lung1, lung2)
+youden_indexes = c(ROC_all_melanoma["Youden_cutpoint",],
+                   ROC_all_lung["Youden_cutpoint",])
+biomarker_cutoffs(youden_indexes, rbind(mel1, mel2, lung1, lung2))
 
 # Figure 3D
-misclassified_pats(youden_indexes, mel1, mel2, lung1, lung2)
+misclassified_pats(youden_indexes,  rbind(mel1, mel2, lung1, lung2))
 
 # Figure 4A
 NA
@@ -96,20 +97,20 @@ copd_tcga_analysis(data_copd)
 # Figure S2A
 permut_mel1_OS = permutation_analysis(clinical.data_ = mel1,
                                    stratification_1 = ("skin/ occult"),
-                                   stratification_2 = ("acral/ mucosal"), 
-                                   survival_type = "OS", 
+                                   stratification_2 = ("acral/ mucosal"),
+                                   survival_type = "OS",
                                    survival_censor = "OS_censorship")
 permut_mel2_OS = permutation_analysis(clinical.data_ = mel2,
                                    stratification_1 = ("skin/ occult"),
-                                   stratification_2 = ("acral/ mucosal"), 
-                                   survival_type = "OS", 
+                                   stratification_2 = ("acral/ mucosal"),
+                                   survival_type = "OS",
                                    survival_censor = "OS_censorship")
 
 # Figure S2B
 permut_lung1_OS = permutation_analysis(clinical.data_ = lung1,
                                     stratification_1 = ("former/ current"),
-                                    stratification_2 = ("never"), 
-                                    survival_type = "OS", 
+                                    stratification_2 = ("never"),
+                                    survival_type = "OS",
                                     survival_censor = "OS_censorship")
 
 # Figure S3

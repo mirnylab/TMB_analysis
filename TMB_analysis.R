@@ -7,14 +7,13 @@ library(maftools)
 library(survival)
 library(ggrepel)
 library(tibble)
-library(dca) #rdevtools::install_github("ddsjoberg/dca")
 library(dplyr)
 
 source("TMB_functions.R")
-
+setwd("TMB_analysis/")
 data_tmb19cancers = read.delim("data_tmb19cancers", stringsAsFactors = F)
 data_tmb_targeted = read.delim("data_tmb_targeted", stringsAsFactors = F)
-data_tmb_wes = read.delim("/home/cgurjao/Dropbox (Partners HealthCare)/Mirnylab/TMB_project/Data/Processed_data/data_tmb_wes", stringsAsFactors = F)
+data_tmb_wes = read.delim("data_tmb_wes", stringsAsFactors = F)
 data_copd = read.delim("data_copd", stringsAsFactors = F)
 
 mel1 = data_tmb_wes[which(data_tmb_wes$dataset == "mel1"),]
@@ -71,19 +70,19 @@ lung2_permut = permutation_analysis(clinical.data_ = lung2,
                                     survival_type = "PFS",
                                     survival_censor = "PFS_censorship")
 
+
 # Figure 3A
-ROC_all_melanoma = ROC_analysis(rbind(mel1, mel2))
+youden_indexes = c()
+youden_indexes[1:2] = plot_auc(rbind(mel1, mel2))[3:4]
 
 # Figure 3B
-ROC_all_lung = ROC_analysis(rbind(lung1, lung2))
+youden_indexes[3:4] = plot_auc(rbind(lung1, lung2))[3:4]
 
 # Figure 3C
-youden_indexes = c(ROC_all_melanoma["Youden_cutpoint",],
-                   ROC_all_lung["Youden_cutpoint",])
-biomarker_cutoffs(youden_indexes, rbind(mel1, mel2, lung1, lung2))
+FDA_youden_cutoffs(youden_indexes, mel1, mel2, lung1, lung2)
 
 # Figure 3D
-misclassified_pats(youden_indexes,  rbind(mel1, mel2, lung1, lung2))
+misclassified_pats(youden_indexes, mel1, mel2, lung1, lung2)
 
 # Figure 4A
 NA
@@ -91,10 +90,13 @@ NA
 # Figure 4B
 immunogenicity_model()
 
-# Figure S1
+# Figure S2
 copd_tcga_analysis(data_copd)
 
-# Figure S2A
+# Figure S3
+tmb_icb_19cancers(data_tmb19cancers)
+
+# Figure S5A
 permut_mel1_OS = permutation_analysis(clinical.data_ = mel1,
                                    stratification_1 = ("skin/ occult"),
                                    stratification_2 = ("acral/ mucosal"),
@@ -106,18 +108,15 @@ permut_mel2_OS = permutation_analysis(clinical.data_ = mel2,
                                    survival_type = "OS",
                                    survival_censor = "OS_censorship")
 
-# Figure S2B
+# Figure S5B
 permut_lung1_OS = permutation_analysis(clinical.data_ = lung1,
                                     stratification_1 = ("former/ current"),
                                     stratification_2 = ("never"),
                                     survival_type = "OS",
                                     survival_censor = "OS_censorship")
 
-# Figure S3
+# Figure S7
 permut_targeted = permutation_analysis_targeted(data_tmb_targeted)
 
-# Figure S4
-tmb_icb_19cancers(data_tmb19cancers)
-
-# Figure S5
+# Figure S9
 immunogenicity_model_params()
